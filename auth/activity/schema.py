@@ -1,7 +1,7 @@
 import graphene
 from graphene_django import DjangoObjectType
 from .models import Activity
-
+from users.schema import UserType
 class ActivityType(DjangoObjectType):
     class Meta:
         model = Activity
@@ -17,6 +17,7 @@ class CreateActivity(graphene.Mutation):
     activity_type = graphene.String()
     start_date = graphene.Date()
     description = graphene.String()
+    posted_by = graphene.Field(UserType)
 
     class Arguments:
         activity_type = graphene.String()
@@ -24,13 +25,20 @@ class CreateActivity(graphene.Mutation):
         description = graphene.String()
 
     def mutate(self, info, activity_type, start_date, description):
-        activity = Activity(activity_type=activity_type, start_date=start_date, description=description)
+        user = info.context.user or None
+        activity = Activity(
+            activity_type=activity_type,
+            start_date=start_date,
+            description=description,
+            posted_by=user,
+        )
         activity.save()
 
         return CreateActivity(
             activity_type=activity.activity_type,
             start_date=activity.start_date,
-            description=activity.description
+            description=activity.description,
+            posted_by=activity.posted_by,
         )
 
 class Mutation(graphene.ObjectType):

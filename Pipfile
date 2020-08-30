@@ -16,6 +16,8 @@ mysqlclient = "*"
 graphene-django = "*"
 django-graphql-jwt = "*"
 django-environ = "*"
+install = "*"
+django-cors-headers = "*"
 
 [requires]
 python_version = "3.7"
