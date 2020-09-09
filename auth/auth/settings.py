@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
 from pathlib import Path
-
+import time
+from datetime import timedelta
 import environ
 
 env = environ.Env()
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "graphene_django",
+    "graphql_jwt.refresh_token.apps.RefreshTokenConfig"
 ]
 
 MIDDLEWARE = [
@@ -91,6 +93,13 @@ GRAPHENE = {
     'MIDDLEWARE': [
         'graphql_jwt.middleware.JSONWebTokenMiddleware',
     ],
+}
+
+GRAPHQL_JWT = {
+    'JWT_VERIFY_EXPIRATION': True,
+    'JWT_LONG_RUNNING_REFRESH_TOKEN': True,
+    'JWT_EXPIRATION_DELTA': timedelta(minutes=100),
+    'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
 }
 
 WSGI_APPLICATION = "auth.wsgi.application"
