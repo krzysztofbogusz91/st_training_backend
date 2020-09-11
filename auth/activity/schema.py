@@ -1,11 +1,27 @@
 import graphene
 from graphene_django import DjangoObjectType
-from .models import Activity, StrengthSection
+from .models import Activity, StrengthSection, Exercise, ExerciseSet
 from users.schema import UserType
 
+class ExerciseSetInput(graphene.InputObjectType):
+    weights = graphene.Int()
+    reps = graphene.Int()
+    notes = graphene.String()
+
+class ExerciseSetType(DjangoObjectType):
+    class Meta:
+        model = ExerciseSet
+class ExerciseInput(graphene.InputObjectType):
+    exercise_name = graphene.String()
+    sets = ExerciseSetInput()
+
+class ExerciseType(DjangoObjectType):
+    class Meta:
+        model = Exercise
 class StrengthSectionInput(graphene.InputObjectType):
     name = graphene.String()
     section_name = graphene.String()
+    exercises = ExerciseInput()
 
 class StrengthSectionType(DjangoObjectType):
     class Meta:
@@ -27,7 +43,7 @@ class CreateActivity(graphene.Mutation):
     description = graphene.String()
     posted_by = graphene.Field(UserType)
     strength = graphene.Field(StrengthSectionType)
-    print(strength)
+
     class Arguments:
         activity_type = graphene.String()
         start_date = graphene.Date()
@@ -36,8 +52,28 @@ class CreateActivity(graphene.Mutation):
 
     def mutate(self, info, activity_type, start_date, description, strength):
         user = info.context.user or None
-        strength_field = StrengthSection(name=strength.name, section_name=strength.section_name)
+
+        print(strength)
+        sets = ExerciseSet(
+            weights=strength.exercises.sets.weights,
+            reps=strength.exercises.sets.reps,
+            notes=strength.exercises.sets.notes
+        )
+        sets.save()
+
+        exercises = Exercise(
+            exercise_name = strength.exercises.exercise_name,
+            sets=sets
+        )
+        exercises.save()
+        
+        strength_field = StrengthSection(
+            name=strength.name,
+            section_name=strength.section_name,
+            exercises=exercises
+        )
         strength_field.save()
+        
         activity = Activity(
             activity_type=activity_type,
             start_date=start_date,
