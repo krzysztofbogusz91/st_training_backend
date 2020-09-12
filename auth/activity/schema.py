@@ -13,7 +13,7 @@ class ExerciseSetType(DjangoObjectType):
         model = ExerciseSet
 class ExerciseInput(graphene.InputObjectType):
     exercise_name = graphene.String()
-    sets = ExerciseSetInput()
+    sets = graphene.List(ExerciseSetInput)
 
 class ExerciseType(DjangoObjectType):
     class Meta:
@@ -53,20 +53,28 @@ class CreateActivity(graphene.Mutation):
     def mutate(self, info, activity_type, start_date, description, strength):
         user = info.context.user or None
 
-        print(strength)
-        sets = ExerciseSet(
-            weights=strength.exercises.sets.weights,
-            reps=strength.exercises.sets.reps,
-            notes=strength.exercises.sets.notes
-        )
-        sets.save()
-
+        sets = []
+        for set in strength.exercises.sets:
+            print(set)
+            set_data = ExerciseSet(
+                id=100,
+                weights=set.weights,
+                reps=set.reps,
+                notes=set.notes
+            )
+            set_data.save()
+            sets.append(set_data)
+            
         exercises = Exercise(
             exercise_name = strength.exercises.exercise_name,
-            sets=sets
         )
+
         exercises.save()
-        
+
+        exercises.sets.set(sets)
+
+        exercises.save()
+
         strength_field = StrengthSection(
             name=strength.name,
             section_name=strength.section_name,

@@ -2,12 +2,13 @@ from django.db import models
 from django.conf import settings
 # TODO accept only precise types of activity_type
 class ExerciseSet(models.Model):
+    id = models.IntegerField(primary_key=True)
     weights = models.IntegerField()
     reps = models.IntegerField()
     notes = models.TextField(blank=True)
 class Exercise(models.Model):
     exercise_name = models.CharField(max_length=100)
-    sets = models.ForeignKey('activity.ExerciseSet', related_name='sets', primary_key=True, null=False, unique=True, on_delete=models.CASCADE)
+    sets = models.ManyToManyField(ExerciseSet, related_name='exercise_set', null = True, blank = True,)
 class StrengthSection(models.Model):
     name = models.TextField(blank=True)
     section_name = models.CharField(max_length=100)
