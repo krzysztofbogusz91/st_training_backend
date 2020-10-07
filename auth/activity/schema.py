@@ -2,6 +2,7 @@ import graphene
 from graphene_django import DjangoObjectType
 from .models import Activity, StrengthSections, Exercise, ExerciseSet
 from users.schema import UserType
+from django.core.exceptions import ValidationError
 
 class ExerciseSetInput(graphene.InputObjectType):
     weights = graphene.Int()
@@ -33,6 +34,9 @@ class Query(graphene.ObjectType):
     activities = graphene.List(ActivityType)
 
     def resolve_activities(self, info, **kwargs):
+        user = info.context.user or None
+        if user.is_anonymous:
+            raise Exception('You must login to see activities!')
         return Activity.objects.all()
 
 class CreateActivity(graphene.Mutation):
@@ -95,6 +99,14 @@ class CreateActivity(graphene.Mutation):
             description=description,
             posted_by=user,
         )
+
+        # validate
+        try:
+            activity.full_clean()
+        except ValidationError as e:
+            raise Exception(e)
+            pass
+
         activity.save()
         activity.strength.set(sections)
         activity.save()

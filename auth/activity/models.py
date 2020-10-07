@@ -1,6 +1,5 @@
 from django.db import models
 from django.conf import settings
-# TODO accept only precise types of activity_type
 class ExerciseSet(models.Model):
     weights = models.IntegerField()
     reps = models.IntegerField()
@@ -12,8 +11,15 @@ class StrengthSections(models.Model):
     section_name = models.CharField(max_length=100)
     exercises = models.ManyToManyField(Exercise, related_name='exercise', null = True, blank = True,)
 
+
 class Activity(models.Model):
-    activity_type = models.CharField(max_length=30)
+    STRENGTH = "STRENGTH"
+    CARDIO = "CARDIO"
+    TYPE_CHOICES = [
+        (STRENGTH, STRENGTH),
+        (CARDIO, CARDIO)
+    ]
+    activity_type = models.CharField(max_length=30, choices=TYPE_CHOICES, default=STRENGTH)
     start_date = models.DateField()
     name = models.TextField(default="text", blank=True)
     description = models.TextField(blank=True)
