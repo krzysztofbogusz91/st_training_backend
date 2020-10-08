@@ -1,6 +1,6 @@
 import graphene
 from graphene_django import DjangoObjectType
-from .models import Activity, StrengthSections, Exercise, ExerciseSet
+from .models import Activity, StrengthSections, Exercise, ExerciseSet, CardioSession
 from users.schema import UserType
 from django.core.exceptions import ValidationError
 
@@ -26,6 +26,16 @@ class StrengthSectionsInput(graphene.InputObjectType):
 class StrengthSectionsType(DjangoObjectType):
     class Meta:
         model = StrengthSections
+
+class CardioSessionInput(graphene.InputObjectType):
+    duration = graphene.Int()
+    cardio_type = graphene.String()
+    start_date = graphene.Date()
+    end_date = graphene.Date()
+
+class CardioSessionType(DjangoObjectType):
+    class Meta:
+        model = CardioSession
 class ActivityType(DjangoObjectType):
     class Meta:
         model = Activity
@@ -46,6 +56,7 @@ class CreateActivity(graphene.Mutation):
     description = graphene.String()
     name = graphene.String()
     posted_by = graphene.Field(UserType)
+    cardio = graphene.Field(CardioSessionType, required=False,)
     strength = graphene.List(StrengthSectionsType)
 
     class Arguments:
@@ -53,9 +64,10 @@ class CreateActivity(graphene.Mutation):
         start_date = graphene.Date()
         name = graphene.String()
         description = graphene.String()
+        cardio = graphene.Argument(CardioSessionInput, required=False)
         strength = graphene.List(StrengthSectionsInput)
 
-    def mutate(self, info, activity_type, start_date, name, description, strength):
+    def mutate(self, info, activity_type, start_date, name, description, strength, cardio=None):
         user = info.context.user or None
         
         sections = []
@@ -98,6 +110,7 @@ class CreateActivity(graphene.Mutation):
             name=name,
             description=description,
             posted_by=user,
+            cardio=cardio
         )
 
         # validate
@@ -117,6 +130,7 @@ class CreateActivity(graphene.Mutation):
             name=activity.name,
             description=activity.description,
             posted_by=activity.posted_by,
+            cardio=activity.cardio,
             strength=sections,
         )
 
