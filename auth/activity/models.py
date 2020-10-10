@@ -1,16 +1,5 @@
 from django.db import models
 from django.conf import settings
-class ExerciseSet(models.Model):
-    weights = models.IntegerField()
-    reps = models.IntegerField()
-    notes = models.TextField(blank=True)
-class Exercise(models.Model):
-    exercise_name = models.CharField(max_length=100)
-    sets = models.ManyToManyField(ExerciseSet, related_name='exercise_set', blank = True,)
-class StrengthSections(models.Model):
-    section_name = models.CharField(max_length=100)
-    exercises = models.ManyToManyField(Exercise, related_name='exercise', blank = True,)
-
 class CardioSession(models.Model):
     duration = models.IntegerField()
     cardio_type = models.TextField(blank=True)
@@ -30,4 +19,25 @@ class Activity(models.Model):
     description = models.TextField(blank=True)
     posted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE)
     cardio = models.ForeignKey(CardioSession, blank = True, null=True, on_delete=models.CASCADE)
-    strength = models.ManyToManyField(StrengthSections, related_name='exercise', blank = True,)
+
+    def get_sections(self):
+        return self.sections.all()
+
+class StrengthSections(models.Model):
+    section_name = models.CharField(max_length=100)
+    activity = models.ForeignKey(Activity, related_name="sections", null=True, blank = True, on_delete=models.CASCADE)
+
+    def get_exercises(self):
+        return self.exercises.all()
+
+class Exercise(models.Model):
+    exercise_name = models.CharField(max_length=100)
+    section = models.ForeignKey(StrengthSections, related_name="exercises", null=True, blank = True, on_delete=models.CASCADE)
+    
+    def get_sets(self):
+        return self.sets.all()
+class ExerciseSet(models.Model):
+    exercise = models.ForeignKey(Exercise, related_name="sets", null=True, blank = True, on_delete=models.CASCADE)
+    weights = models.IntegerField()
+    reps = models.IntegerField()
+    notes = models.TextField(null=True, blank=True)

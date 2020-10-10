@@ -1,24 +1,21 @@
 import graphene
 from graphene_django import DjangoObjectType
+from graphene_django.rest_framework.mutation import SerializerMutation
 from .models import Activity, StrengthSections, Exercise, ExerciseSet, CardioSession
 from users.schema import UserType
 from django.core.exceptions import ValidationError
+from .serializers import ActivitySerializer, SectionSerializer
 
 class ExerciseSetInput(graphene.InputObjectType):
     weights = graphene.Int()
     reps = graphene.Int()
     notes = graphene.String()
 
-class ExerciseSetType(DjangoObjectType):
-    class Meta:
-        model = ExerciseSet
 class ExercisesInput(graphene.InputObjectType):
     exercise_name = graphene.String()
     sets = graphene.List(ExerciseSetInput)
 
-class ExerciseType(DjangoObjectType):
-    class Meta:
-        model = Exercise
+
 class StrengthSectionsInput(graphene.InputObjectType):
     section_name = graphene.String()
     exercises = graphene.List(ExercisesInput)
@@ -26,6 +23,22 @@ class StrengthSectionsInput(graphene.InputObjectType):
 class StrengthSectionsType(DjangoObjectType):
     class Meta:
         model = StrengthSections
+class ExerciseSetType(DjangoObjectType):
+    class Meta:
+        model = ExerciseSet
+class ExerciseType(DjangoObjectType):
+    class Meta:
+        model = Exercise
+class Sets(graphene.ObjectType):
+    notes = graphene.String()
+    weights = graphene.Int()
+    reps = graphene.Int()
+class ExerciseObject(graphene.ObjectType):
+    exercise_name = graphene.String()
+    sets = graphene.List(Sets, required=False,)
+class Section(graphene.ObjectType):
+    section_name = graphene.String()
+    exercises = graphene.List(ExerciseObject, default_value=[], required=False,)
 
 class CardioSessionInput(graphene.InputObjectType):
     duration = graphene.Int()
@@ -57,7 +70,7 @@ class CreateActivity(graphene.Mutation):
     name = graphene.String()
     posted_by = graphene.Field(UserType)
     cardio = graphene.Field(CardioSessionType, required=False,)
-    strength = graphene.List(StrengthSectionsType)
+    sections = graphene.List(Section, required=False,)
 
     class Arguments:
         activity_type = graphene.String()
@@ -65,45 +78,12 @@ class CreateActivity(graphene.Mutation):
         name = graphene.String()
         description = graphene.String()
         cardio = graphene.Argument(CardioSessionInput, required=False)
-        strength = graphene.List(StrengthSectionsInput)
+        sections = graphene.List(StrengthSectionsInput)
 
-    def mutate(self, info, activity_type, start_date, name, description, strength, cardio=None):
+    def mutate(self, info, activity_type, start_date, name, description, sections, cardio=None):
         user = info.context.user or None
-        
-        sections = []
-        exercises = []
-        sets = []
-        # sections
-        for section in strength:
-            section_data = StrengthSections(
-                section_name=section.section_name
-            )
-            section_data.save()
-            # exercises
-            for exercise in section.exercises:
-                exercise_data = Exercise(
-                    exercise_name=exercise.exercise_name,
-                )
-                exercise_data.save()
-                # sets
-                for exercise_set in exercise.sets:
-                    set_data = ExerciseSet(
-                        weights=exercise_set.weights,
-                        reps=exercise_set.reps,
-                        notes=exercise_set.notes
-                    )
-                    set_data.save()
-                    sets.append(set_data)
-                # set exercise sets
-                exercise_data.sets.set(sets)
-                exercise_data.save()
-                exercises.append(exercise_data)
-            # set section exercises
-            section_data.exercises.set(exercises)
-            section_data.save()
-            # append to main array
-            sections.append(section_data)
-        # end section loop
+
+        # crate basic activity
         activity = Activity(
             activity_type=activity_type,
             start_date=start_date,
@@ -112,6 +92,36 @@ class CreateActivity(graphene.Mutation):
             posted_by=user,
             cardio=cardio
         )
+        activity.save()
+
+        # sections
+        for section in sections:
+            section_data = StrengthSections(
+                section_name=section.section_name,
+                activity = activity
+            )
+            section_data.save()
+            # exercises
+            for exercise in section.exercises:
+                exercise_data = Exercise(
+                    exercise_name=exercise.exercise_name,
+                    section = section_data
+                )
+                exercise_data.save()
+                # sets
+                for exercise_set in exercise.sets:
+                    set_data = ExerciseSet(
+                        exercise=exercise_data,
+                        weights=exercise_set.weights,
+                        reps=exercise_set.reps,
+                        notes=exercise_set.notes
+                    )
+                    set_data.save()
+        # end section loop
+        activity.save()
+
+        activity_serializer = ActivitySerializer(instance=activity)
+        sections_info = activity_serializer.data.get('sections')
 
         # validate
         try:
@@ -120,10 +130,6 @@ class CreateActivity(graphene.Mutation):
             raise Exception(e)
             pass
 
-        activity.save()
-        activity.strength.set(sections)
-        activity.save()
-
         return CreateActivity(
             activity_type=activity.activity_type,
             start_date=activity.start_date,
@@ -131,7 +137,7 @@ class CreateActivity(graphene.Mutation):
             description=activity.description,
             posted_by=activity.posted_by,
             cardio=activity.cardio,
-            strength=sections,
+            sections=sections_info
         )
 
 class Mutation(graphene.ObjectType):
