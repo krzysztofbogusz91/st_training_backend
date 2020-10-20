@@ -1,5 +1,7 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
+
+
 class CardioSession(models.Model):
     duration = models.IntegerField()
     cardio_type = models.TextField(blank=True)

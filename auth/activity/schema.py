@@ -1,10 +1,12 @@
 import graphene
+from django.core.exceptions import ValidationError
 from graphene_django import DjangoObjectType
 from graphene_django.rest_framework.mutation import SerializerMutation
-from .models import Activity, StrengthSections, Exercise, ExerciseSet, CardioSession
 from users.schema import UserType
-from django.core.exceptions import ValidationError
+
+from .models import Activity, CardioSession, Exercise, ExerciseSet, StrengthSections
 from .serializers import ActivitySerializer, SectionSerializer
+
 
 class ExerciseSetInput(graphene.InputObjectType):
     weights = graphene.Int()

@@ -1,7 +1,8 @@
+import activity.schema
 import graphene
 import graphql_jwt
 import users.schema
-import activity.schema
+
 
 class Query(users.schema.Query, activity.schema.Query, graphene.ObjectType):
     pass

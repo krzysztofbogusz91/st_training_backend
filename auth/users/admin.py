@@ -1,5 +1,6 @@
+from activity.models import Activity, Exercise, ExerciseSet, StrengthSections
 from django.contrib import admin
-from activity.models import Activity, StrengthSections, Exercise, ExerciseSet
+
 # Register your models here.
 admin.site.register(Activity)
 admin.site.register(StrengthSections)
