@@ -8,6 +8,9 @@ black = "==19.3b0"
 isort = "*"
 flake8 = "*"
 mypy = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-django = "*"
 
 [packages]
 django = "*"
@@ -19,6 +22,7 @@ django-environ = "*"
 install = "*"
 django-cors-headers = "*"
 djangorestframework = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.7"
