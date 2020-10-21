@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from graphene_django import DjangoObjectType
 from graphene_django.rest_framework.mutation import SerializerMutation
 from users.schema import UserType
-
+from graphql import GraphQLError
 from .models import Activity, CardioSession, Exercise, ExerciseSet, StrengthSections
 from .serializers import ActivitySerializer, SectionSerializer
 
@@ -61,7 +61,7 @@ class Query(graphene.ObjectType):
     def resolve_activities(self, info, **kwargs):
         user = info.context.user or None
         if user.is_anonymous:
-            raise Exception('You must login to see activities!')
+            raise GraphQLError('You must login to see activities!')
         return Activity.objects.all()
 
 class CreateActivity(graphene.Mutation):

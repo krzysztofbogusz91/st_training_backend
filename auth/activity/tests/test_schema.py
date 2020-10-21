@@ -2,12 +2,18 @@ import json
 
 from activity.models import Activity, StrengthSections
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 from django.test import TestCase
 from django.utils import timezone
 from graphene_django.utils.testing import GraphQLTestCase
+from graphene.test import Client
+from graphql import GraphQLError
 from graphql_jwt.shortcuts import get_token
+from activity.schema import schema
 
+class TestContext: 
+    def __init__(self, user):
+        self.user = user
 
 # Create your tests here.
 class ActivitySchemaTests(GraphQLTestCase):
@@ -31,10 +37,10 @@ class ActivitySchemaTests(GraphQLTestCase):
         )
         new_activity.save()
         
-        token = get_token(get_user_model().objects.get(pk=self.user1.pk))
-        headers = {"Authorization": f"JWT {token}"}
-        response = self.query(
-            '''
+        context_value = TestContext(user=self.user1)
+        client = Client(schema, context_value=context_value)
+
+        query = '''
               query {
                 activities {
                   id
@@ -67,15 +73,69 @@ class ActivitySchemaTests(GraphQLTestCase):
                   }
                 }
               }
-            ''',
-            headers=headers,
+            '''
+        response = client.execute(query)
+        activiesResponse = response['data']['activities']
+        userName = response['data']['activities'][0]['postedBy']['username']
+
+        self.assertEqual(len(activiesResponse), 1)
+        self.assertEqual(userName, 'jacob')
+
+    def test_unauth_user_cannot_access_activities(self):
+        """
+         Unatenticated user test
+        """
+
+        new_activity = Activity(
+          start_date=timezone.now(),
+          activity_type=Activity.STRENGTH,
+          name = 'name',
+          posted_by=self.user1,
+        )
+        new_activity.save()
+        
+        response = self.query('''
+              query {
+                activities {
+                  id
+                  activityType,
+                  startDate,
+                  name,
+                  description,
+                  postedBy {
+                    username
+                  },
+                  cardio {
+                    duration,
+                    startDate,
+                    endDate,
+                    cardioType
+                  },
+                  sections {
+                    id
+                    sectionName,
+                    exercises {
+                      id
+                      exerciseName
+                      sets {
+                        id
+                        weights,
+                        reps,
+                        notes
+                      }
+                    }
+                  }
+                }
+              }
+            '''
         )
 
         content = json.loads(response.content)
-        activiesResponse = content['data']['activities']
+        self.assertResponseHasErrors(response)
+        self.assertTrue(content['errors'])
+        self.assertTrue(content['errors'][0]['message'] == 'You must login to see activities!')
 
-        self.assertResponseNoErrors(response)
-        self.assertEqual(len(activiesResponse), 1)
+
 
     def test_user_log_in(self):
         """
