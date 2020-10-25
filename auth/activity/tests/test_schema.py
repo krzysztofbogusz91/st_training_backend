@@ -10,6 +10,7 @@ from graphene.test import Client
 from graphql import GraphQLError
 from graphql_jwt.shortcuts import get_token
 from activity.schema import schema
+from activity.tests.test_helpers.queries import activity_query, token_auth_query
 
 class TestContext: 
     def __init__(self, user):
@@ -40,40 +41,8 @@ class ActivitySchemaTests(GraphQLTestCase):
         context_value = TestContext(user=self.user1)
         client = Client(schema, context_value=context_value)
 
-        query = '''
-              query {
-                activities {
-                  id
-                  activityType,
-                  startDate,
-                  name,
-                  description,
-                  postedBy {
-                    username
-                  },
-                  cardio {
-                    duration,
-                    startDate,
-                    endDate,
-                    cardioType
-                  },
-                  sections {
-                    id
-                    sectionName,
-                    exercises {
-                      id
-                      exerciseName
-                      sets {
-                        id
-                        weights,
-                        reps,
-                        notes
-                      }
-                    }
-                  }
-                }
-              }
-            '''
+        query = activity_query
+
         response = client.execute(query)
         activiesResponse = response['data']['activities']
         userName = response['data']['activities'][0]['postedBy']['username']
@@ -94,41 +63,7 @@ class ActivitySchemaTests(GraphQLTestCase):
         )
         new_activity.save()
         
-        response = self.query('''
-              query {
-                activities {
-                  id
-                  activityType,
-                  startDate,
-                  name,
-                  description,
-                  postedBy {
-                    username
-                  },
-                  cardio {
-                    duration,
-                    startDate,
-                    endDate,
-                    cardioType
-                  },
-                  sections {
-                    id
-                    sectionName,
-                    exercises {
-                      id
-                      exerciseName
-                      sets {
-                        id
-                        weights,
-                        reps,
-                        notes
-                      }
-                    }
-                  }
-                }
-              }
-            '''
-        )
+        response = self.query(activity_query)
 
         content = json.loads(response.content)
         self.assertResponseHasErrors(response)
@@ -142,18 +77,7 @@ class ActivitySchemaTests(GraphQLTestCase):
          Test user can login and will get token
         """
         
-        response = self.query(
-            '''
-              mutation {
-                tokenAuth(username: "jacob", password: "top_secret") {
-                token
-                  payload
-                  refreshExpiresIn
-                  refreshToken
-                }
-              }
-            ''',
-        )
+        response = self.query(token_auth_query)
 
         content = json.loads(response.content)
         # This validates the status code and if you get errors
