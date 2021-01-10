@@ -9,6 +9,14 @@
 __pycache__/
 local_settings.py
 media
+htmlcov
+.coverage
+.coverage.*
+.DS_Store
+.DS_Store?
+**/migrations/**
+!**/migrations
+!**/migrations/__init__.py
 
 ### VisualStudioCode template
 .vscode

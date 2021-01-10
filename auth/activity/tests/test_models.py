@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
+from django.core.exceptions import ValidationError
 
 # Create your tests here.
 class ActivityModelTests(TestCase):
@@ -91,21 +92,42 @@ class ActivityModelTests(TestCase):
         self.assertEqual(section_data.get_exercises().count(), 1)
         self.assertEqual(exercise.get_sets().count(), 1)
         self.assertEqual(ex_set.exercise.pk, exercise.pk)
-
-    # def test_activity_can_only_accept_correct_type(self):
-    #     """
-    #     tests if activity section is connected to activity correctly
-    #     """
-    #     start_date = time = timezone.now()
-    #     activity_type = 'WRONG TYPE'
-    #     name = 'Test Training'
-    #     new_activity = Activity(
-    #       start_date=start_date,
-    #       activity_type=activity_type,
-    #       name = name,
-    #       posted_by=self.user1,
-    #     )
-    #     # new_activity.save()
-
         
-    #     self.assertEqual(new_activity.get_sections().count(), 1)
+
+    def test_activity_can_only_accept_correct_type_throws_err_with_wrong(self):
+        """
+        tests if activity section is connected to activity correctly
+        """
+        start_date = time = timezone.now()
+        activity_type = 'WRONG TYPE'
+        name = 'Test Training'
+        new_activity = Activity(
+          start_date=start_date,
+          activity_type=activity_type,
+          name = name,
+          posted_by=self.user1,
+        )
+
+        new_activity.save()
+
+        with self.assertRaises(ValidationError):
+            new_activity.full_clean()
+
+    def test_activity_can_only_accept_correct_type(self):
+        """
+        tests if activity section is connected to activity correctly
+        """
+        start_date = time = timezone.now()
+        activity_type = Activity.STRENGTH
+        name = 'Test Training'
+        new_activity = Activity(
+          start_date=start_date,
+          activity_type=activity_type,
+          name = name,
+          posted_by=self.user1,
+        )
+        
+        new_activity.save()
+        new_activity.full_clean()
+        
+        self.assertEqual(new_activity.activity_type, Activity.STRENGTH)
