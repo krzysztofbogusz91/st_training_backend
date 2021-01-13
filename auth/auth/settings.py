@@ -40,6 +40,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     "users",
     "activity",
+    "training",
     "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
