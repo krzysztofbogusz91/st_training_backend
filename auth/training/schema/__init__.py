@@ -3,6 +3,9 @@ import graphene
 from .queries import (
     TrainingSplitQuery
 )
+from .mutations import (
+    CreateTrainingSplitMutation
+)
 
 
 class Query(
@@ -13,4 +16,4 @@ class Query(
 
 
 class Mutation(graphene.ObjectType):
-    pass
+    create_training_split = CreateTrainingSplitMutation.Field()
